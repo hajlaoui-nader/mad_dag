@@ -15,10 +15,6 @@
 # Project structure
 ```
 │
-│
-├── app/
-│   └── docker-compose.yaml      # services required to run Airflow
-│
 ├── init/
 │   └── init.sql                 # sql script to initialize the target database and table (redshift)
 │
