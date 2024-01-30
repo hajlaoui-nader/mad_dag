@@ -1,0 +1,6 @@
+apache-airflow
+pytest
+pandas
+boto3
+sqlalchemy
+psycopg2-binary
