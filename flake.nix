@@ -1,33 +1,52 @@
 {
+  description = "Python venv development template";
+
   inputs = {
+    utils.url = "github:numtide/flake-utils";
     nixpkgs = {
       url = "github:nixos/nixpkgs/nixos-unstable";
     };
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-    };
   };
-  outputs = { nixpkgs, flake-utils, ... }: flake-utils.lib.eachDefaultSystem (system:
-    let
-      pkgs = import nixpkgs {
-        inherit system;
-      };
-    in rec {
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          postgresql
-          python311
-          python311Packages.pip
-          #sqlite
+
+  outputs = {
+    self,
+    nixpkgs,
+    utils,
+    ...
+  }:
+    utils.lib.eachDefaultSystem (system: let
+      pkgs = import nixpkgs {inherit system;};
+      pythonPackages = pkgs.python311Packages;
+    in {
+      devShells.default = pkgs.mkShell {
+        name = "python-venv";
+        venvDir = "./.venv";
+        buildInputs = [
+          # A Python interpreter including the 'venv' module is required to bootstrap
+          # the environment.
+          pythonPackages.python
+
+          # This executes some shell code to initialize a venv in $venvDir before
+          # dropping into the shell
+          pythonPackages.venvShellHook
+
+          # Those are dependencies that we would like to use from nixpkgs, which will
+          # add them to PYTHONPATH and thus make them accessible from within the venv.
+          pythonPackages.numpy
         ];
-        shellHook = ''
-          echo "Entering devShell for ${system}"
-          export PIP_PREFIX=$(pwd)/_build/pip_packages #Dir where built packages are stored
-          export PYTHONPATH="$PIP_PREFIX/${pkgs.python3.sitePackages}:$PYTHONPATH"
-          export PATH="$PIP_PREFIX/bin:$PATH"
+
+        # Run this command, only after creating the virtual environment
+        postVenvCreation = ''
+          unset SOURCE_DATE_EPOCH
+          pip install -r requirements.txt
+        '';
+
+        # Now we can execute any commands within the virtual environment.
+        # This is optional and can be left out to run pip manually.
+        postShellHook = ''
+          # allow pip to install wheels
           unset SOURCE_DATE_EPOCH
         '';
       };
-    }
-  );
+    });
 }
